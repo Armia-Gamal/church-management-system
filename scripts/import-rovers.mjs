@@ -3,14 +3,24 @@ import { resolve } from 'node:path'
 import { initializeApp } from 'firebase/app'
 import { Timestamp, doc, getFirestore, writeBatch } from 'firebase/firestore'
 
+const requireEnv = (key) => {
+  const value = process.env[key]
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`)
+  }
+
+  return value
+}
+
 const firebaseConfig = {
-  apiKey: 'AIzaSyAWiFiUphBx-8l4Xays40USj23Zqg4cJ1o',
-  authDomain: 'church-management-dae38.firebaseapp.com',
-  projectId: 'church-management-dae38',
-  storageBucket: 'church-management-dae38.firebasestorage.app',
-  messagingSenderId: '427615898935',
-  appId: '1:427615898935:web:3ab608bf32c66d96e7deb2',
-  measurementId: 'G-239JQDZ4XN',
+  apiKey: requireEnv('FIREBASE_API_KEY'),
+  authDomain: requireEnv('FIREBASE_AUTH_DOMAIN'),
+  projectId: requireEnv('FIREBASE_PROJECT_ID'),
+  storageBucket: requireEnv('FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: requireEnv('FIREBASE_MESSAGING_SENDER_ID'),
+  appId: requireEnv('FIREBASE_APP_ID'),
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID || '',
 }
 
 const app = initializeApp(firebaseConfig)

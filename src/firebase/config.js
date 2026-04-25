@@ -2,14 +2,24 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
+const requireEnv = (key) => {
+  const value = import.meta.env[key]
+
+  if (!value) {
+    throw new Error(`Missing required Firebase environment variable: ${key}`)
+  }
+
+  return value
+}
+
 const firebaseConfig = {
-  apiKey: 'AIzaSyAWiFiUphBx-8l4Xays40USj23Zqg4cJ1o',
-  authDomain: 'church-management-dae38.firebaseapp.com',
-  projectId: 'church-management-dae38',
-  storageBucket: 'church-management-dae38.firebasestorage.app',
-  messagingSenderId: '427615898935',
-  appId: '1:427615898935:web:3ab608bf32c66d96e7deb2',
-  measurementId: 'G-239JQDZ4XN',
+  apiKey: requireEnv('VITE_FIREBASE_API_KEY'),
+  authDomain: requireEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: requireEnv('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: requireEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: requireEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: requireEnv('VITE_FIREBASE_APP_ID'),
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
 }
 
 const app = initializeApp(firebaseConfig)
