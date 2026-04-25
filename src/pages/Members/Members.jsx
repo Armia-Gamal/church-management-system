@@ -7,6 +7,16 @@ import memberService from '../../services/memberService'
 import './Members.css'
 
 const formatNumber = (value) => new Intl.NumberFormat('ar-EG').format(value)
+const stageOptions = [
+  'براعم اولاد',
+  'براعم بنات',
+  'أشبال',
+  'زهرات',
+  'كشافة',
+  'مرشدات',
+  'متقدم',
+  'رائدات',
+]
 const normalizeTextValue = (value) => (typeof value === 'string' ? value.trim() : '')
 const normalizeImageValue = (value) => {
   if (value instanceof File) {
@@ -94,7 +104,13 @@ const createEmptyForm = () => ({
 })
 
 const formFields = [
-  { name: 'stage', label: 'المرحلة', type: 'text', required: true },
+  {
+    name: 'stage',
+    label: 'المرحلة',
+    type: 'select',
+    required: true,
+    options: stageOptions,
+  },
   { name: 'fullName', label: 'الاسم رباعي', type: 'text', required: true },
   { name: 'birthDate', label: 'تاريخ الميلاد', type: 'date' },
   { name: 'nationalId', label: 'الرقم القومي', type: 'text', required: true },
@@ -121,6 +137,8 @@ const formFields = [
 function Members() {
   const [members, setMembers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedStages, setSelectedStages] = useState([])
+  const [isStageFilterOpen, setIsStageFilterOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -174,11 +192,44 @@ function Members() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!error) {
+      return undefined
+    }
+
+    const timerId = window.setTimeout(() => {
+      setError('')
+    }, 5000)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [error])
+
   const filteredMembers = members.filter((member) => {
     const target =
       `${member.fullName || ''} ${member.phone || ''} ${member.nationalId || ''}`.toLowerCase()
-    return target.includes(searchTerm.trim().toLowerCase())
+
+    const matchesSearch = target.includes(searchTerm.trim().toLowerCase())
+    const matchesStage =
+      selectedStages.length === 0 || selectedStages.includes(member.stage)
+
+    return matchesSearch && matchesStage
   })
+
+  const selectedStageCount = selectedStages.length
+
+  const toggleStage = (stage) => {
+    setSelectedStages((currentStages) =>
+      currentStages.includes(stage)
+        ? currentStages.filter((currentStage) => currentStage !== stage)
+        : [...currentStages, stage],
+    )
+  }
+
+  const clearStageFilter = () => {
+    setSelectedStages([])
+  }
 
   const handleAddClick = () => {
     setSelectedMember(null)
@@ -313,7 +364,53 @@ function Members() {
         value={searchTerm}
       />
 
-      {error ? <p className="records-page__error">{error}</p> : null}
+      <div className="records-page__filter-row">
+        <div className="records-page__filter-shell">
+          <div className="records-page__filter-header">
+            <button
+              aria-expanded={isStageFilterOpen}
+              aria-controls="members-stage-filter"
+              className="records-page__filter-trigger"
+              onClick={() => setIsStageFilterOpen((current) => !current)}
+              type="button"
+            >
+              <span>فلتر المرحلة</span>
+              <strong>
+                {selectedStageCount > 0 ? `${selectedStageCount} مختارة` : 'الكل'}
+              </strong>
+            </button>
+
+            {selectedStageCount > 0 ? (
+              <button
+                className="records-page__filter-clear"
+                onClick={clearStageFilter}
+                type="button"
+              >
+                مسح الفلتر
+              </button>
+            ) : null}
+          </div>
+
+          {isStageFilterOpen ? (
+            <div className="records-page__filter-panel" id="members-stage-filter">
+              {stageOptions.map((stage) => {
+                const isChecked = selectedStages.includes(stage)
+
+                return (
+                  <label className={`records-page__filter-option ${isChecked ? 'is-active' : ''}`} key={stage}>
+                    <input
+                      checked={isChecked}
+                      onChange={() => toggleStage(stage)}
+                      type="checkbox"
+                    />
+                    <span>{stage}</span>
+                  </label>
+                )
+              })}
+            </div>
+          ) : null}
+        </div>
+      </div>
 
       <Table
         columns={columns}

@@ -103,6 +103,7 @@
 }
 
 .record-form__field input,
+.record-form__field select,
 .record-form__field textarea {
   width: 100%;
   padding: 0.95rem 1rem;
@@ -117,6 +118,7 @@
 }
 
 .record-form__field input:focus,
+.record-form__field select:focus,
 .record-form__field textarea:focus {
   border-color: rgba(35, 111, 128, 0.35);
   box-shadow: var(--focus-ring);

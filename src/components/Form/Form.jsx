@@ -93,6 +93,20 @@ function Form({
                         rows={field.rows || 4}
                         value={normalizeFieldValue(field, fieldValue)}
                       />
+                    ) : field.type === 'select' ? (
+                      <select
+                        name={field.name}
+                        onChange={onChange}
+                        required={field.required}
+                        value={normalizeFieldValue(field, fieldValue)}
+                      >
+                        <option value="">اختر {field.label}</option>
+                        {field.options?.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     ) : field.type === 'file' ? (
                       <>
                         <input
