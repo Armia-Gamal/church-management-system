@@ -2,26 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { initializeApp } from 'firebase/app'
 import { Timestamp, doc, getFirestore, writeBatch } from 'firebase/firestore'
-
-const requireEnv = (key) => {
-  const value = process.env[key]
-
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`)
-  }
-
-  return value
-}
-
-const firebaseConfig = {
-  apiKey: requireEnv('FIREBASE_API_KEY'),
-  authDomain: requireEnv('FIREBASE_AUTH_DOMAIN'),
-  projectId: requireEnv('FIREBASE_PROJECT_ID'),
-  storageBucket: requireEnv('FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: requireEnv('FIREBASE_MESSAGING_SENDER_ID'),
-  appId: requireEnv('FIREBASE_APP_ID'),
-  measurementId: process.env.FIREBASE_MEASUREMENT_ID || '',
-}
+import firebaseConfig from './firebaseConfig.mjs'
 
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)

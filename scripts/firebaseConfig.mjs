@@ -1,7 +1,3 @@
-import { initializeApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
-
 const firebaseConfig = {
   apiKey: 'AIzaSyAWiFiUphBx-8l4Xays40USj23Zqg4cJ1o',
   authDomain: 'church-management-dae38.firebaseapp.com',
@@ -12,8 +8,4 @@ const firebaseConfig = {
   measurementId: 'G-239JQDZ4XN',
 }
 
-const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
-const storage = getStorage(app)
-
-export { app, db, storage }
+export default firebaseConfig
