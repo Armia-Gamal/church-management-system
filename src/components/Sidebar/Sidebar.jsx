@@ -22,7 +22,7 @@ function Sidebar({ isOpen, onClose }) {
         <div className="sidebar__top">
           <div>
             <p className="sidebar__eyebrow">نظام الإدارة الكنسية</p>
-            <h1 className="sidebar__brand">بيانات الكنيسة</h1>
+            <h1 className="sidebar__brand">بيانات كشافه كنيسه الانبا كاراس و الانبا ابرام</h1>
           </div>
 
           <button className="sidebar__close" onClick={onClose} type="button">

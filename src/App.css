@@ -3,7 +3,7 @@
 }
 
 .app-main {
-  margin-right: 300px;
+  margin-right: 240px;
   min-height: 100vh;
   position: relative;
 }
@@ -43,9 +43,9 @@
 
 .app-content {
   min-height: 100vh;
-  max-width: 1400px;
+  max-width: 1680px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1.25rem;
   animation: appFadeIn 0.3s ease;
 }
 

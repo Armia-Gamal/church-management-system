@@ -13,7 +13,7 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = 'ar'
     document.documentElement.dir = 'rtl'
-    document.title = 'إدارة بيانات الكنيسة'
+    document.title = 'بيانات كشافه كنيسه الانبا كاراس و الانبا ابرام'
   }, [])
 
   return (

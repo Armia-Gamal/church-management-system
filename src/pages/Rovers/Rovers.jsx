@@ -349,7 +349,6 @@ function Rovers() {
 
         <div className="records-page__chips">
           <span>الإجمالي {formatNumber(rovers.length)}</span>
-          <span>المعروض {formatNumber(filteredRovers.length)}</span>
         </div>
       </div>
 

@@ -302,7 +302,6 @@ function Members() {
 
         <div className="records-page__chips">
           <span>الإجمالي {formatNumber(members.length)}</span>
-          <span>المعروض {formatNumber(filteredMembers.length)}</span>
         </div>
       </div>
 

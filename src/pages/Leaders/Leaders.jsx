@@ -349,7 +349,6 @@ function Leaders() {
 
         <div className="records-page__chips">
           <span>الإجمالي {formatNumber(leaders.length)}</span>
-          <span>المعروض {formatNumber(filteredLeaders.length)}</span>
         </div>
       </div>
 

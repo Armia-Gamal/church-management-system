@@ -83,7 +83,7 @@ function Dashboard() {
         <div className="dashboard-page__hero-copy">
           <p className="dashboard-page__eyebrow">نظرة عامة</p>
           <h2 className="dashboard-page__headline">
-            لوحة عربية متكاملة لإدارة بيانات الكنيسة.
+            بيانات كشافه كنيسه الانبا كاراس و الانبا ابرام
           </h2>
           <p className="dashboard-page__lead">
             يمكنك متابعة أعداد القادة والأعضاء والجوالة والانتقال مباشرة إلى كل
