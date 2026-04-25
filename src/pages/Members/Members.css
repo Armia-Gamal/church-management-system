@@ -1,0 +1,64 @@
+.records-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.records-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.records-page__eyebrow {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.records-page__title {
+  margin-top: 0.45rem;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-family: var(--font-heading);
+}
+
+.records-page__copy {
+  margin-top: 0.7rem;
+  max-width: 42rem;
+  font-size: 1.02rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.records-page__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.records-page__chips span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.93rem;
+}
+
+.records-page__error {
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius-lg);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+@media (max-width: 768px) {
+  .records-page__header {
+    flex-direction: column;
+  }
+}
