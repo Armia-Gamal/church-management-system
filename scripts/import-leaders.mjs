@@ -100,6 +100,7 @@ const main = async () => {
 
     batch.set(doc(db, 'leaders', documentId), {
       timestamp,
+      status: 'نشط',
       fullName: normalizeText(fullName),
       birthDate: parseUsDate(birthDate),
       address: normalizeText(address),

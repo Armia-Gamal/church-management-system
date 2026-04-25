@@ -4,8 +4,10 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  query,
   serverTimestamp,
   updateDoc,
+  where,
 } from 'firebase/firestore'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { db, storage } from '../firebase/config'
@@ -75,6 +77,25 @@ const getAll = async () => {
   )
 }
 
+const getByStage = async (stage) => {
+  const normalizedStage = typeof stage === 'string' ? stage.trim() : ''
+
+  if (!normalizedStage) {
+    return []
+  }
+
+  const snapshot = await getDocs(
+    query(membersCollection, where('stage', '==', normalizedStage)),
+  )
+
+  return sortByName(
+    snapshot.docs.map((record) => ({
+      id: record.id,
+      ...record.data(),
+    })),
+  )
+}
+
 const add = async (data) => {
   const { images = {}, ...restData } = data
   const emptyImages = memberImageKeys.reduce((currentImages, imageKey) => {
@@ -123,6 +144,7 @@ const remove = async (id) => {
 
 const memberService = {
   getAll,
+  getByStage,
   add,
   update,
   delete: remove,

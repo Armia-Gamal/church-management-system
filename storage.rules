@@ -2,6 +2,10 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function isImageUpload() {
       return request.resource != null
         && request.resource.contentType.matches('image/.*')
@@ -9,18 +13,18 @@ service firebase.storage {
     }
 
     match /leaders/{documentId}/{fileName} {
-      allow read: if true;
-      allow write: if isImageUpload();
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isImageUpload();
     }
 
     match /members/{documentId}/{fileName} {
-      allow read: if true;
-      allow write: if isImageUpload();
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isImageUpload();
     }
 
     match /rovers/{documentId}/{fileName} {
-      allow read: if true;
-      allow write: if isImageUpload();
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isImageUpload();
     }
 
     match /{allPaths=**} {

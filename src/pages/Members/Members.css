@@ -57,6 +57,12 @@
   color: var(--danger);
 }
 
+.records-page__filters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
 .records-page__filter-row {
   display: flex;
   justify-content: flex-start;
@@ -148,6 +154,10 @@
 @media (max-width: 768px) {
   .records-page__header {
     flex-direction: column;
+  }
+
+  .records-page__filters-grid {
+    grid-template-columns: 1fr;
   }
 
   .records-page__filter-shell {

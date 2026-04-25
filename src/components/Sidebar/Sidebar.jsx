@@ -1,14 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 
-const navItems = [
+const defaultNavItems = [
   { label: 'لوحة التحكم', to: '/' },
   { label: 'القادة', to: '/leaders' },
+  { label: 'القادة البنات', to: '/rovers' },
   { label: 'الأعضاء', to: '/members' },
-  { label: 'الجوالة', to: '/rovers' },
 ]
 
-function Sidebar({ isOpen, onClose }) {
+function Sidebar({ isOpen, navItems = defaultNavItems, onClose, onLogout }) {
   return (
     <>
       <button
@@ -31,7 +31,7 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         <p className="sidebar__summary">
-          منصة موحدة لإدارة بيانات القادة والأعضاء والجوالة وربطها مباشرة بقاعدة
+          منصة موحدة لإدارة بيانات القادة والأعضاء والقادة البنات وربطها مباشرة بقاعدة
           البيانات.
         </p>
 
@@ -51,6 +51,12 @@ function Sidebar({ isOpen, onClose }) {
             </NavLink>
           ))}
         </nav>
+
+        <div className="sidebar__footer">
+          <button className="sidebar__logout" onClick={onLogout} type="button">
+            تسجيل الخروج
+          </button>
+        </div>
       </aside>
     </>
   )

@@ -14,10 +14,21 @@ const stageOptions = [
   'زهرات',
   'كشافة',
   'مرشدات',
+  'جواله اولاد',
+  'جواله بنات',
   'متقدم',
   'رائدات',
 ]
 const normalizeTextValue = (value) => (typeof value === 'string' ? value.trim() : '')
+const statusOptions = ['نشط', 'غير نشط']
+const SCOUT_START_YEAR = 2000
+const currentYear = new Date().getFullYear()
+const scoutYearOptions = Array.from(
+  { length: Math.max(currentYear - SCOUT_START_YEAR + 1, 1) },
+  (_, index) => String(SCOUT_START_YEAR + index),
+)
+const normalizeStatusValue = (value) =>
+  statusOptions.includes(normalizeTextValue(value)) ? normalizeTextValue(value) : 'نشط'
 const normalizeImageValue = (value) => {
   if (value instanceof File) {
     return value
@@ -25,6 +36,8 @@ const normalizeImageValue = (value) => {
 
   return normalizeTextValue(value)
 }
+const isImageUrl = (value) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(value)
+const isPdfUrl = (value) => /\.pdf(\?.*)?$/i.test(value)
 const formatDateTime = (value) => {
   if (!value) {
     return 'غير متوفر'
@@ -49,17 +62,59 @@ const formatDateTime = (value) => {
   }).format(normalizedDate)
 }
 
+const NOTE_PREVIEW_LIMIT = 120
+
+function NotePreview({ note }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const normalizedNote = normalizeTextValue(note)
+
+  if (!normalizedNote) {
+    return <span className="table__empty-image">لا يوجد</span>
+  }
+
+  const isLongNote = normalizedNote.length > NOTE_PREVIEW_LIMIT
+  const visibleNote =
+    isLongNote && !isExpanded
+      ? `${normalizedNote.slice(0, NOTE_PREVIEW_LIMIT)}...`
+      : normalizedNote
+
+  return (
+    <div className="table__note-preview">
+      <p className="table__note-text">{visibleNote}</p>
+      {isLongNote ? (
+        <button
+          className="table__note-toggle"
+          onClick={() => setIsExpanded((current) => !current)}
+          type="button"
+        >
+          {isExpanded ? 'عرض أقل' : 'عرض المزيد'}
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
 const renderImagePreview = (imageUrl, altText) =>
   imageUrl ? (
-    <a
-      className="table__image-link"
-      href={imageUrl}
-      rel="noreferrer"
-      target="_blank"
-      title={altText}
-    >
-      <img alt={altText} className="table__image" src={imageUrl} />
-    </a>
+    isPdfUrl(imageUrl) ? (
+      <a className="table__image-link" href={imageUrl} rel="noreferrer" target="_blank">
+        <span className="table__empty-image">فتح PDF</span>
+      </a>
+    ) : (
+      <a
+        className="table__image-link"
+        href={imageUrl}
+        rel="noreferrer"
+        target="_blank"
+        title={altText}
+      >
+        {isImageUrl(imageUrl) ? (
+          <img alt={altText} className="table__image" src={imageUrl} />
+        ) : (
+          <span className="table__empty-image">فتح الملف</span>
+        )}
+      </a>
+    )
   ) : (
     <span className="table__empty-image">لا يوجد</span>
   )
@@ -78,6 +133,16 @@ const columns = [
   { key: 'parentPhone', label: 'رقم هاتف ولي الأمر' },
   { key: 'address', label: 'العنوان' },
   {
+    key: 'scoutEntryYear',
+    label: 'تاريخ دخول الكشافه',
+    render: (member) => normalizeTextValue(member.scoutEntryYear) || 'غير متوفر',
+  },
+  {
+    key: 'note',
+    label: 'ملاحظة',
+    render: (member) => <NotePreview note={member.note} />,
+  },
+  {
     key: 'images.profile',
     label: 'الصورة الشخصية',
     render: (member) => renderImagePreview(member.images?.profile, 'الصورة الشخصية'),
@@ -87,9 +152,20 @@ const columns = [
     label: 'صورة المستند',
     render: (member) => renderImagePreview(member.images?.document, 'صورة المستند'),
   },
+  {
+    key: 'scoutEntryYear',
+    label: 'تاريخ دخول الكشافه',
+    render: (member) => normalizeTextValue(member.scoutEntryYear) || 'غير متوفر',
+  },
+  {
+    key: 'status',
+    label: 'الحالة',
+    render: (member) => normalizeStatusValue(member.status),
+  },
 ]
 
 const createEmptyForm = () => ({
+  status: 'نشط',
   stage: '',
   fullName: '',
   birthDate: '',
@@ -97,6 +173,8 @@ const createEmptyForm = () => ({
   phone: '',
   parentPhone: '',
   address: '',
+  scoutEntryYear: '',
+  note: '',
   images: {
     profile: '',
     document: '',
@@ -104,6 +182,13 @@ const createEmptyForm = () => ({
 })
 
 const formFields = [
+  {
+    name: 'status',
+    label: 'الحالة',
+    type: 'select',
+    required: true,
+    options: statusOptions,
+  },
   {
     name: 'stage',
     label: 'المرحلة',
@@ -118,10 +203,25 @@ const formFields = [
   { name: 'parentPhone', label: 'رقم هاتف ولي الأمر', type: 'tel' },
   { name: 'address', label: 'العنوان', type: 'text', fullWidth: true },
   {
+    name: 'note',
+    label: 'ملاحظة',
+    type: 'textarea',
+    fullWidth: true,
+    group: 'بيانات إضافية',
+  },
+  {
+    name: 'scoutEntryYear',
+    label: 'تاريخ دخول الكشافه',
+    type: 'select',
+    options: scoutYearOptions,
+    fullWidth: true,
+    group: 'بيانات إضافية',
+  },
+  {
     name: 'images.profile',
     label: 'الصورة الشخصية',
     type: 'file',
-    accept: 'image/*',
+    accept: 'image/*,application/pdf,.pdf',
     fullWidth: true,
     group: 'الصور',
   },
@@ -129,15 +229,21 @@ const formFields = [
     name: 'images.document',
     label: 'صورة المستند',
     type: 'file',
-    accept: 'image/*',
+    accept: 'image/*,application/pdf,.pdf',
     fullWidth: true,
   },
 ]
 
-function Members() {
+function Members({ accessProfile }) {
+  const isSharedStageUser = accessProfile?.role === 'shared-member-stage'
+  const sharedMemberStage = normalizeTextValue(accessProfile?.memberStageAccess)
   const [members, setMembers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedStages, setSelectedStages] = useState([])
+  const [selectedStages, setSelectedStages] = useState(
+    isSharedStageUser && sharedMemberStage ? [sharedMemberStage] : [],
+  )
+  const [selectedStatuses, setSelectedStatuses] = useState([])
+  const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false)
   const [isStageFilterOpen, setIsStageFilterOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -151,7 +257,10 @@ function Members() {
     setError('')
 
     try {
-      const records = await memberService.getAll()
+      const records =
+        isSharedStageUser && sharedMemberStage
+          ? await memberService.getByStage(sharedMemberStage)
+          : await memberService.getAll()
       setMembers(records)
     } catch (loadError) {
       setError(
@@ -167,7 +276,10 @@ function Members() {
 
     const loadInitialMembers = async () => {
       try {
-        const records = await memberService.getAll()
+        const records =
+          isSharedStageUser && sharedMemberStage
+            ? await memberService.getByStage(sharedMemberStage)
+            : await memberService.getAll()
 
         if (isMounted) {
           setMembers(records)
@@ -190,7 +302,15 @@ function Members() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [isSharedStageUser, sharedMemberStage])
+
+  useEffect(() => {
+    if (!isSharedStageUser) {
+      return
+    }
+
+    setSelectedStages(sharedMemberStage ? [sharedMemberStage] : [])
+  }, [isSharedStageUser, sharedMemberStage])
 
   useEffect(() => {
     if (!error) {
@@ -211,15 +331,37 @@ function Members() {
       `${member.fullName || ''} ${member.phone || ''} ${member.nationalId || ''}`.toLowerCase()
 
     const matchesSearch = target.includes(searchTerm.trim().toLowerCase())
-    const matchesStage =
-      selectedStages.length === 0 || selectedStages.includes(member.stage)
+    const matchesStage = isSharedStageUser
+      ? member.stage === sharedMemberStage
+      : selectedStages.length === 0 || selectedStages.includes(member.stage)
+    const matchesStatus =
+      selectedStatuses.length === 0 || selectedStatuses.includes(normalizeStatusValue(member.status))
 
-    return matchesSearch && matchesStage
+    return matchesSearch && matchesStage && matchesStatus
   })
 
   const selectedStageCount = selectedStages.length
+  const selectedStatusCount = selectedStatuses.length
+  const statusCounts = members.reduce(
+    (counts, member) => {
+      const currentStatus = normalizeStatusValue(member.status)
+
+      if (currentStatus === 'غير نشط') {
+        counts.inactive += 1
+      } else {
+        counts.active += 1
+      }
+
+      return counts
+    },
+    { active: 0, inactive: 0 },
+  )
 
   const toggleStage = (stage) => {
+    if (isSharedStageUser) {
+      return
+    }
+
     setSelectedStages((currentStages) =>
       currentStages.includes(stage)
         ? currentStages.filter((currentStage) => currentStage !== stage)
@@ -227,8 +369,24 @@ function Members() {
     )
   }
 
+  const toggleStatus = (status) => {
+    setSelectedStatuses((currentStatuses) =>
+      currentStatuses.includes(status)
+        ? currentStatuses.filter((currentStatus) => currentStatus !== status)
+        : [...currentStatuses, status],
+    )
+  }
+
   const clearStageFilter = () => {
+    if (isSharedStageUser) {
+      return
+    }
+
     setSelectedStages([])
+  }
+
+  const clearStatusFilter = () => {
+    setSelectedStatuses([])
   }
 
   const handleAddClick = () => {
@@ -301,6 +459,7 @@ function Members() {
     event.preventDefault()
 
     const payload = {
+      status: normalizeStatusValue(formValues.status),
       stage: normalizeTextValue(formValues.stage),
       fullName: normalizeTextValue(formValues.fullName),
       birthDate: formValues.birthDate,
@@ -308,6 +467,8 @@ function Members() {
       phone: normalizeTextValue(formValues.phone),
       parentPhone: normalizeTextValue(formValues.parentPhone),
       address: normalizeTextValue(formValues.address),
+      scoutEntryYear: normalizeTextValue(formValues.scoutEntryYear),
+      note: normalizeTextValue(formValues.note),
       images: {
         profile: normalizeImageValue(formValues.images.profile),
         document: normalizeImageValue(formValues.images.document),
@@ -347,70 +508,132 @@ function Members() {
           <p className="records-page__eyebrow">قسم البيانات</p>
           <h2 className="records-page__title">بيانات الأعضاء</h2>
           <p className="records-page__copy">
-            عرض وإدارة كامل أعمدة الأعضاء مع المرحلة والعنوان وصور المستندات.
+            {isSharedStageUser && sharedMemberStage
+              ? `عرض أعضاء مرحلة ${sharedMemberStage} فقط حسب المشاركة المخصصة لهذا الحساب.`
+              : 'عرض وإدارة كامل أعمدة الأعضاء مع المرحلة والعنوان وصور المستندات.'}
           </p>
         </div>
 
         <div className="records-page__chips">
           <span>الإجمالي {formatNumber(members.length)}</span>
+          <span>النشط {formatNumber(statusCounts.active)}</span>
+          <span>غير النشط {formatNumber(statusCounts.inactive)}</span>
         </div>
       </div>
 
       <SearchBar
-        buttonLabel="إضافة عضو"
-        onAdd={handleAddClick}
+        buttonLabel={isSharedStageUser ? '' : 'إضافة عضو'}
+        onAdd={isSharedStageUser ? undefined : handleAddClick}
         onChange={setSearchTerm}
         placeholder="ابحث بالاسم أو رقم الهاتف أو الرقم القومي"
         value={searchTerm}
       />
 
-      <div className="records-page__filter-row">
-        <div className="records-page__filter-shell">
-          <div className="records-page__filter-header">
-            <button
-              aria-expanded={isStageFilterOpen}
-              aria-controls="members-stage-filter"
-              className="records-page__filter-trigger"
-              onClick={() => setIsStageFilterOpen((current) => !current)}
-              type="button"
-            >
-              <span>فلتر المرحلة</span>
-              <strong>
-                {selectedStageCount > 0 ? `${selectedStageCount} مختارة` : 'الكل'}
-              </strong>
-            </button>
+      {isSharedStageUser && sharedMemberStage ? (
+        <div className="records-page__chips">
+          <span>المرحلة المخصصة: {sharedMemberStage}</span>
+        </div>
+      ) : null}
 
-            {selectedStageCount > 0 ? (
+      {!isSharedStageUser ? (
+        <div className="records-page__filters-grid">
+        <div className="records-page__filter-row">
+          <div className="records-page__filter-shell">
+            <div className="records-page__filter-header">
               <button
-                className="records-page__filter-clear"
-                onClick={clearStageFilter}
+                aria-expanded={isStageFilterOpen}
+                aria-controls="members-stage-filter"
+                className="records-page__filter-trigger"
+                onClick={() => setIsStageFilterOpen((current) => !current)}
                 type="button"
               >
-                مسح الفلتر
+                <span>فلتر المرحلة</span>
+                <strong>
+                  {selectedStageCount > 0 ? `${selectedStageCount} مختارة` : 'الكل'}
+                </strong>
               </button>
+
+              {selectedStageCount > 0 ? (
+                <button
+                  className="records-page__filter-clear"
+                  onClick={clearStageFilter}
+                  type="button"
+                >
+                  مسح الفلتر
+                </button>
+              ) : null}
+            </div>
+
+            {isStageFilterOpen ? (
+              <div className="records-page__filter-panel" id="members-stage-filter">
+                {stageOptions.map((stage) => {
+                  const isChecked = selectedStages.includes(stage)
+
+                  return (
+                    <label className={`records-page__filter-option ${isChecked ? 'is-active' : ''}`} key={stage}>
+                      <input
+                        checked={isChecked}
+                        onChange={() => toggleStage(stage)}
+                        type="checkbox"
+                      />
+                      <span>{stage}</span>
+                    </label>
+                  )
+                })}
+              </div>
             ) : null}
           </div>
+        </div>
 
-          {isStageFilterOpen ? (
-            <div className="records-page__filter-panel" id="members-stage-filter">
-              {stageOptions.map((stage) => {
-                const isChecked = selectedStages.includes(stage)
+        <div className="records-page__filter-row">
+          <div className="records-page__filter-shell">
+            <div className="records-page__filter-header">
+              <button
+                aria-expanded={isStatusFilterOpen}
+                aria-controls="members-status-filter"
+                className="records-page__filter-trigger"
+                onClick={() => setIsStatusFilterOpen((current) => !current)}
+                type="button"
+              >
+                <span>فلتر الحالة</span>
+                <strong>
+                  {selectedStatusCount > 0 ? `${selectedStatusCount} مختارة` : 'الكل'}
+                </strong>
+              </button>
 
-                return (
-                  <label className={`records-page__filter-option ${isChecked ? 'is-active' : ''}`} key={stage}>
-                    <input
-                      checked={isChecked}
-                      onChange={() => toggleStage(stage)}
-                      type="checkbox"
-                    />
-                    <span>{stage}</span>
-                  </label>
-                )
-              })}
+              {selectedStatusCount > 0 ? (
+                <button
+                  className="records-page__filter-clear"
+                  onClick={clearStatusFilter}
+                  type="button"
+                >
+                  مسح الفلتر
+                </button>
+              ) : null}
             </div>
-          ) : null}
+
+            {isStatusFilterOpen ? (
+              <div className="records-page__filter-panel" id="members-status-filter">
+                {statusOptions.map((status) => {
+                  const isChecked = selectedStatuses.includes(status)
+
+                  return (
+                    <label className={`records-page__filter-option ${isChecked ? 'is-active' : ''}`} key={status}>
+                      <input
+                        checked={isChecked}
+                        onChange={() => toggleStatus(status)}
+                        type="checkbox"
+                      />
+                      <span>{status}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
+      ) : null}
 
       <Table
         columns={columns}
@@ -421,21 +644,24 @@ function Members() {
             : 'لا توجد بيانات أعضاء حتى الآن. ابدأ بإضافة أول سجل.'
         }
         isLoading={isLoading}
+        showActions={!isSharedStageUser}
         onDelete={handleDelete}
         onEdit={handleEdit}
       />
 
-      <Form
-        errorMessage={error}
-        fields={formFields}
-        isOpen={isFormOpen}
-        isSubmitting={isSaving}
-        onChange={handleChange}
-        onClose={handleCloseForm}
-        onSubmit={handleSubmit}
-        title={selectedMember ? 'تعديل بيانات عضو' : 'إضافة عضو'}
-        values={formValues}
-      />
+      {!isSharedStageUser ? (
+        <Form
+          errorMessage={error}
+          fields={formFields}
+          isOpen={isFormOpen}
+          isSubmitting={isSaving}
+          onChange={handleChange}
+          onClose={handleCloseForm}
+          onSubmit={handleSubmit}
+          title={selectedMember ? 'تعديل بيانات عضو' : 'إضافة عضو'}
+          values={formValues}
+        />
+      ) : null}
     </section>
   )
 }

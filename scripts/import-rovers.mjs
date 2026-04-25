@@ -75,6 +75,7 @@ const main = async () => {
 
     batch.set(doc(db, 'rovers', documentId), {
       timestamp: Timestamp.now(),
+      status: 'نشط',
       fullName: normalizeText(fullName),
       birthDate: parseUsDate(birthDate),
       address: normalizeText(address),

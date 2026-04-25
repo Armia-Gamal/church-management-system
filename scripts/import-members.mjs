@@ -1,7 +1,16 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { initializeApp } from 'firebase/app'
-import { Timestamp, doc, getFirestore, writeBatch } from 'firebase/firestore'
+import {
+  Timestamp,
+  collection,
+  doc,
+  getDocs,
+  getFirestore,
+  query,
+  limit,
+  writeBatch,
+} from 'firebase/firestore'
 import firebaseConfig from './firebaseConfig.mjs'
 
 const app = initializeApp(firebaseConfig)
@@ -63,6 +72,25 @@ const createDocumentId = (nationalId, index) => {
   return `${safeNationalId}-${Date.now()}-${index + 1}`
 }
 
+const clearCollection = async (collectionName) => {
+  const collectionRef = collection(db, collectionName)
+
+  while (true) {
+    const snapshot = await getDocs(query(collectionRef, limit(400)))
+
+    if (snapshot.empty) {
+      return
+    }
+
+    const deleteBatch = writeBatch(db)
+    snapshot.docs.forEach((record) => {
+      deleteBatch.delete(doc(db, collectionName, record.id))
+    })
+
+    await deleteBatch.commit()
+  }
+}
+
 const main = async () => {
   const rawContent = await readFile(dataFilePath, 'utf8')
   const rows = rawContent
@@ -75,6 +103,9 @@ const main = async () => {
     throw new Error('File has more than 500 rows, split import into smaller batches.')
   }
 
+  console.log('Clearing existing members collection...')
+  await clearCollection('members')
+
   const batch = writeBatch(db)
 
   rows.forEach((columns, index) => {
@@ -83,6 +114,7 @@ const main = async () => {
 
     batch.set(doc(db, 'members', documentId), {
       timestamp: Timestamp.now(),
+      status: 'نشط',
       stage: normalizeText(stage),
       fullName: normalizeText(fullName),
       birthDate: parseFlexibleDate(birthDate),

@@ -8,6 +8,27 @@ import './Rovers.css'
 
 const formatNumber = (value) => new Intl.NumberFormat('ar-EG').format(value)
 const normalizeTextValue = (value) => (typeof value === 'string' ? value.trim() : '')
+const statusOptions = ['نشط', 'غير نشط']
+const memberStageShareOptions = [
+  'براعم اولاد',
+  'براعم بنات',
+  'أشبال',
+  'زهرات',
+  'كشافة',
+  'مرشدات',
+  'جواله اولاد',
+  'جواله بنات',
+  'متقدم',
+  'رائدات',
+]
+const SCOUT_START_YEAR = 2000
+const currentYear = new Date().getFullYear()
+const scoutYearOptions = Array.from(
+  { length: Math.max(currentYear - SCOUT_START_YEAR + 1, 1) },
+  (_, index) => String(SCOUT_START_YEAR + index),
+)
+const normalizeStatusValue = (value) =>
+  statusOptions.includes(normalizeTextValue(value)) ? normalizeTextValue(value) : 'نشط'
 const normalizeImageValue = (value) => {
   if (value instanceof File) {
     return value
@@ -15,6 +36,8 @@ const normalizeImageValue = (value) => {
 
   return normalizeTextValue(value)
 }
+const isImageUrl = (value) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(value)
+const isPdfUrl = (value) => /\.pdf(\?.*)?$/i.test(value)
 const formatDateTime = (value) => {
   if (!value) {
     return 'غير متوفر'
@@ -39,17 +62,59 @@ const formatDateTime = (value) => {
   }).format(normalizedDate)
 }
 
+const NOTE_PREVIEW_LIMIT = 120
+
+function NotePreview({ note }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const normalizedNote = normalizeTextValue(note)
+
+  if (!normalizedNote) {
+    return <span className="table__empty-image">لا يوجد</span>
+  }
+
+  const isLongNote = normalizedNote.length > NOTE_PREVIEW_LIMIT
+  const visibleNote =
+    isLongNote && !isExpanded
+      ? `${normalizedNote.slice(0, NOTE_PREVIEW_LIMIT)}...`
+      : normalizedNote
+
+  return (
+    <div className="table__note-preview">
+      <p className="table__note-text">{visibleNote}</p>
+      {isLongNote ? (
+        <button
+          className="table__note-toggle"
+          onClick={() => setIsExpanded((current) => !current)}
+          type="button"
+        >
+          {isExpanded ? 'عرض أقل' : 'عرض المزيد'}
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
 const renderImagePreview = (imageUrl, altText) =>
   imageUrl ? (
-    <a
-      className="table__image-link"
-      href={imageUrl}
-      rel="noreferrer"
-      target="_blank"
-      title={altText}
-    >
-      <img alt={altText} className="table__image" src={imageUrl} />
-    </a>
+    isPdfUrl(imageUrl) ? (
+      <a className="table__image-link" href={imageUrl} rel="noreferrer" target="_blank">
+        <span className="table__empty-image">فتح PDF</span>
+      </a>
+    ) : (
+      <a
+        className="table__image-link"
+        href={imageUrl}
+        rel="noreferrer"
+        target="_blank"
+        title={altText}
+      >
+        {isImageUrl(imageUrl) ? (
+          <img alt={altText} className="table__image" src={imageUrl} />
+        ) : (
+          <span className="table__empty-image">فتح الملف</span>
+        )}
+      </a>
+    )
   ) : (
     <span className="table__empty-image">لا يوجد</span>
   )
@@ -76,6 +141,16 @@ const columns = [
   { key: 'servantsGraduationYear', label: 'سنة تخرج إعداد خدام' },
   { key: 'servantsChurch', label: 'كنيسة إعداد خدام' },
   {
+    key: 'scoutEntryYear',
+    label: 'تاريخ دخول الكشافه',
+    render: (rover) => normalizeTextValue(rover.scoutEntryYear) || 'غير متوفر',
+  },
+  {
+    key: 'note',
+    label: 'ملاحظة',
+    render: (rover) => <NotePreview note={rover.note} />,
+  },
+  {
     key: 'images.profile',
     label: 'الصورة الشخصية',
     render: (rover) => renderImagePreview(rover.images?.profile, 'الصورة الشخصية'),
@@ -90,9 +165,21 @@ const columns = [
     label: 'البطاقة الخلفية',
     render: (rover) => renderImagePreview(rover.images?.idBack, 'البطاقة الخلفية'),
   },
+  {
+    key: 'status',
+    label: 'الحالة',
+    render: (rover) => normalizeStatusValue(rover.status),
+  },
+  {
+    key: 'sharedMemberStage',
+    label: 'مشاركة مرحلة الأعضاء',
+    render: (rover) => normalizeTextValue(rover.sharedMemberStage) || 'لا توجد مشاركة',
+  },
 ]
 
 const createEmptyForm = () => ({
+  status: 'نشط',
+  sharedMemberStage: '',
   fullName: '',
   birthDate: '',
   address: '',
@@ -108,6 +195,8 @@ const createEmptyForm = () => ({
   confessionChurch: '',
   servantsGraduationYear: '',
   servantsChurch: '',
+  scoutEntryYear: '',
+  note: '',
   images: {
     idFront: '',
     idBack: '',
@@ -116,6 +205,19 @@ const createEmptyForm = () => ({
 })
 
 const formFields = [
+  {
+    name: 'status',
+    label: 'الحالة',
+    type: 'select',
+    required: true,
+    options: statusOptions,
+  },
+  {
+    name: 'sharedMemberStage',
+    label: 'مشاركة مرحلة من الأعضاء',
+    type: 'select',
+    options: memberStageShareOptions,
+  },
   { name: 'fullName', label: 'الاسم رباعي', type: 'text', required: true },
   { name: 'birthDate', label: 'تاريخ الميلاد', type: 'date' },
   { name: 'address', label: 'العنوان', type: 'text' },
@@ -132,10 +234,25 @@ const formFields = [
   { name: 'servantsGraduationYear', label: 'سنة تخرج إعداد خدام', type: 'text' },
   { name: 'servantsChurch', label: 'كنيسة إعداد خدام', type: 'text' },
   {
+    name: 'scoutEntryYear',
+    label: 'تاريخ دخول الكشافه',
+    type: 'select',
+    options: scoutYearOptions,
+    fullWidth: true,
+    group: 'بيانات إضافية',
+  },
+  {
+    name: 'note',
+    label: 'ملاحظة',
+    type: 'textarea',
+    fullWidth: true,
+    group: 'بيانات إضافية',
+  },
+  {
     name: 'images.profile',
     label: 'الصورة الشخصية',
     type: 'file',
-    accept: 'image/*',
+    accept: 'image/*,application/pdf,.pdf',
     fullWidth: true,
     group: 'الصور',
   },
@@ -143,14 +260,14 @@ const formFields = [
     name: 'images.idFront',
     label: 'صورة البطاقة الأمامية',
     type: 'file',
-    accept: 'image/*',
+    accept: 'image/*,application/pdf,.pdf',
     fullWidth: true,
   },
   {
     name: 'images.idBack',
     label: 'صورة البطاقة الخلفية',
     type: 'file',
-    accept: 'image/*',
+    accept: 'image/*,application/pdf,.pdf',
     fullWidth: true,
   },
 ]
@@ -158,6 +275,8 @@ const formFields = [
 function Rovers() {
   const [rovers, setRovers] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedStatuses, setSelectedStatuses] = useState([])
+  const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -174,7 +293,7 @@ function Rovers() {
       setRovers(records)
     } catch (loadError) {
       setError(
-        getFirebaseErrorMessage(loadError, 'تعذر تحميل بيانات الجوالة.'),
+        getFirebaseErrorMessage(loadError, 'تعذر تحميل بيانات القادة البنات.'),
       )
     } finally {
       setIsLoading(false)
@@ -194,7 +313,7 @@ function Rovers() {
       } catch (loadError) {
         if (isMounted) {
           setError(
-            getFirebaseErrorMessage(loadError, 'تعذر تحميل بيانات الجوالة.'),
+            getFirebaseErrorMessage(loadError, 'تعذر تحميل بيانات القادة البنات.'),
           )
         }
       } finally {
@@ -214,8 +333,40 @@ function Rovers() {
   const filteredRovers = rovers.filter((rover) => {
     const target =
       `${rover.fullName || ''} ${rover.phone || ''} ${rover.nationalId || ''}`.toLowerCase()
-    return target.includes(searchTerm.trim().toLowerCase())
+    const matchesSearch = target.includes(searchTerm.trim().toLowerCase())
+    const matchesStatus =
+      selectedStatuses.length === 0 || selectedStatuses.includes(normalizeStatusValue(rover.status))
+
+    return matchesSearch && matchesStatus
   })
+
+  const selectedStatusCount = selectedStatuses.length
+  const statusCounts = rovers.reduce(
+    (counts, rover) => {
+      const currentStatus = normalizeStatusValue(rover.status)
+
+      if (currentStatus === 'غير نشط') {
+        counts.inactive += 1
+      } else {
+        counts.active += 1
+      }
+
+      return counts
+    },
+    { active: 0, inactive: 0 },
+  )
+
+  const toggleStatus = (status) => {
+    setSelectedStatuses((currentStatuses) =>
+      currentStatuses.includes(status)
+        ? currentStatuses.filter((currentStatus) => currentStatus !== status)
+        : [...currentStatuses, status],
+    )
+  }
+
+  const clearStatusFilter = () => {
+    setSelectedStatuses([])
+  }
 
   const handleAddClick = () => {
     setSelectedRover(null)
@@ -287,6 +438,8 @@ function Rovers() {
     event.preventDefault()
 
     const payload = {
+      status: normalizeStatusValue(formValues.status),
+      sharedMemberStage: normalizeTextValue(formValues.sharedMemberStage),
       fullName: normalizeTextValue(formValues.fullName),
       birthDate: formValues.birthDate,
       address: normalizeTextValue(formValues.address),
@@ -302,11 +455,18 @@ function Rovers() {
       confessionChurch: normalizeTextValue(formValues.confessionChurch),
       servantsGraduationYear: normalizeTextValue(formValues.servantsGraduationYear),
       servantsChurch: normalizeTextValue(formValues.servantsChurch),
+      scoutEntryYear: normalizeTextValue(formValues.scoutEntryYear),
+      note: normalizeTextValue(formValues.note),
       images: {
         profile: normalizeImageValue(formValues.images.profile),
         idFront: normalizeImageValue(formValues.images.idFront),
         idBack: normalizeImageValue(formValues.images.idBack),
       },
+    }
+
+    if (payload.sharedMemberStage && !payload.email) {
+      setError('لازم إدخال البريد الإلكتروني قبل تفعيل مشاركة المرحلة.')
+      return
     }
 
     if (!payload.fullName || !payload.phone || !payload.nationalId || !payload.service2026) {
@@ -340,25 +500,75 @@ function Rovers() {
       <div className="records-page__header">
         <div>
           <p className="records-page__eyebrow">قسم البيانات</p>
-          <h2 className="records-page__title">بيانات الجوالة</h2>
+          <h2 className="records-page__title">بيانات القادة البنات</h2>
           <p className="records-page__copy">
-            نفس أعمدة القادة بالكامل متاحة هنا لإدارة بيانات الجوالة دون فقد أي
+            نفس أعمدة القادة بالكامل متاحة هنا لإدارة بيانات القادة البنات دون فقد أي
             حقل.
           </p>
         </div>
 
         <div className="records-page__chips">
           <span>الإجمالي {formatNumber(rovers.length)}</span>
+          <span>النشط {formatNumber(statusCounts.active)}</span>
+          <span>غير النشط {formatNumber(statusCounts.inactive)}</span>
         </div>
       </div>
 
       <SearchBar
-        buttonLabel="إضافة جوال"
+        buttonLabel="إضافة قائدة"
         onAdd={handleAddClick}
         onChange={setSearchTerm}
         placeholder="ابحث بالاسم أو رقم الهاتف أو الرقم القومي"
         value={searchTerm}
       />
+
+      <div className="records-page__filter-row">
+        <div className="records-page__filter-shell">
+          <div className="records-page__filter-header">
+            <button
+              aria-expanded={isStatusFilterOpen}
+              aria-controls="rovers-status-filter"
+              className="records-page__filter-trigger"
+              onClick={() => setIsStatusFilterOpen((current) => !current)}
+              type="button"
+            >
+              <span>فلتر الحالة</span>
+              <strong>
+                {selectedStatusCount > 0 ? `${selectedStatusCount} مختارة` : 'الكل'}
+              </strong>
+            </button>
+
+            {selectedStatusCount > 0 ? (
+              <button
+                className="records-page__filter-clear"
+                onClick={clearStatusFilter}
+                type="button"
+              >
+                مسح الفلتر
+              </button>
+            ) : null}
+          </div>
+
+          {isStatusFilterOpen ? (
+            <div className="records-page__filter-panel" id="rovers-status-filter">
+              {statusOptions.map((status) => {
+                const isChecked = selectedStatuses.includes(status)
+
+                return (
+                  <label className={`records-page__filter-option ${isChecked ? 'is-active' : ''}`} key={status}>
+                    <input
+                      checked={isChecked}
+                      onChange={() => toggleStatus(status)}
+                      type="checkbox"
+                    />
+                    <span>{status}</span>
+                  </label>
+                )
+              })}
+            </div>
+          ) : null}
+        </div>
+      </div>
 
       {error ? <p className="records-page__error">{error}</p> : null}
 
@@ -367,8 +577,8 @@ function Rovers() {
         data={filteredRovers}
         emptyMessage={
           searchTerm
-            ? 'لا توجد نتائج مطابقة لبحث الجوالة.'
-            : 'لا توجد بيانات جوالة حتى الآن. ابدأ بإضافة أول سجل.'
+            ? 'لا توجد نتائج مطابقة لبحث القادة البنات.'
+            : 'لا توجد بيانات للقادة البنات حتى الآن. ابدأ بإضافة أول سجل.'
         }
         isLoading={isLoading}
         onDelete={handleDelete}
@@ -383,7 +593,7 @@ function Rovers() {
         onChange={handleChange}
         onClose={handleCloseForm}
         onSubmit={handleSubmit}
-        title={selectedRover ? 'تعديل بيانات جوال' : 'إضافة جوال'}
+        title={selectedRover ? 'تعديل بيانات قائدة' : 'إضافة قائدة'}
         values={formValues}
       />
     </section>

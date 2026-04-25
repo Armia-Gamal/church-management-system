@@ -4,14 +4,56 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  setDoc,
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { db, storage } from '../firebase/config'
+import authProvisioningService from './authProvisioningService'
 
 const roversCollection = collection(db, 'rovers')
 const roverImageKeys = ['profile', 'idFront', 'idBack']
+const accessCollection = collection(db, 'memberStageAccess')
+
+const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '')
+const normalizeEmail = (value) => normalizeText(value).toLowerCase()
+const normalizeStatus = (value) => (normalizeText(value) === 'غير نشط' ? 'غير نشط' : 'نشط')
+
+const provisionSharedAuthIfNeeded = async ({ email, sharedMemberStage }) => {
+  const normalizedEmail = normalizeEmail(email)
+  const normalizedSharedMemberStage = normalizeText(sharedMemberStage)
+
+  if (!normalizedEmail || !normalizedSharedMemberStage) {
+    return
+  }
+
+  await authProvisioningService.createSharedAuthAccount({
+    email: normalizedEmail,
+    password: normalizedEmail,
+  })
+}
+
+const syncMemberStageAccess = async ({ email, fullName, sharedMemberStage }) => {
+  const normalizedEmail = normalizeEmail(email)
+
+  if (!normalizedEmail) {
+    return
+  }
+
+  await setDoc(
+    doc(accessCollection, normalizedEmail),
+    {
+      email: normalizedEmail,
+      fullName: normalizeText(fullName),
+      memberStageAccess: normalizeText(sharedMemberStage),
+      sourceType: 'rover',
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
+}
+
 
 const sortByName = (records) =>
   [...records].sort((firstRecord, secondRecord) =>
@@ -83,6 +125,7 @@ const add = async (data) => {
   }, {})
   const payload = {
     ...restData,
+    status: normalizeStatus(restData.status),
     images: emptyImages,
     timestamp: serverTimestamp(),
   }
@@ -94,25 +137,35 @@ const add = async (data) => {
     images: uploadedImages,
   })
 
+  await syncMemberStageAccess(payload)
+  await provisionSharedAuthIfNeeded(payload)
+
   return {
     id: recordRef.id,
-    ...restData,
+    ...payload,
     images: uploadedImages,
   }
 }
 
 const update = async (id, data) => {
   const { images = {}, ...restData } = data
+  const payload = {
+    ...restData,
+    status: normalizeStatus(restData.status),
+  }
   const uploadedImages = await resolveImages('rovers', id, images, roverImageKeys)
 
   await updateDoc(doc(db, 'rovers', id), {
-    ...restData,
+    ...payload,
     images: uploadedImages,
   })
 
+  await syncMemberStageAccess(payload)
+  await provisionSharedAuthIfNeeded(payload)
+
   return {
     id,
-    ...restData,
+    ...payload,
     images: uploadedImages,
   }
 }

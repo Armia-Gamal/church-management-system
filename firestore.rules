@@ -2,16 +2,37 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'church@admin.com';
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasAssignedMemberStage(stageValue) {
+      return isAuthenticated()
+        && request.auth.token.email != null
+        && exists(/databases/$(database)/documents/memberStageAccess/$(request.auth.token.email.lower()))
+        && get(/databases/$(database)/documents/memberStageAccess/$(request.auth.token.email.lower())).data.memberStageAccess == stageValue;
+    }
+
     match /leaders/{documentId} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
     }
 
     match /members/{documentId} {
-      allow read, write: if true;
+      allow read: if isAdmin() || hasAssignedMemberStage(resource.data.stage);
+      allow write: if isAdmin();
     }
 
     match /rovers/{documentId} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
+    }
+
+    match /memberStageAccess/{emailId} {
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.token.email != null && request.auth.token.email.lower() == emailId);
+      allow write: if isAdmin();
     }
 
     match /{document=**} {

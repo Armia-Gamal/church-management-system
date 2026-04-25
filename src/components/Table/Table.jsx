@@ -12,6 +12,7 @@ function Table({
   onDelete,
   onEdit,
   pageSize = 10,
+  showActions = true,
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [expandedRows, setExpandedRows] = useState(() => new Set())
@@ -29,6 +30,7 @@ function Table({
     [columns, visibleColumnKeys],
   )
   const isCompactTable = visibleColumns.length <= 5
+  const hasActions = showActions && typeof onEdit === 'function' && typeof onDelete === 'function'
 
   const getCellValue = (row, column) => {
     if (column.render) {
@@ -181,20 +183,20 @@ function Table({
                     {column.label}
                   </th>
                 ))}
-                <th scope="col">الإجراءات</th>
+                {hasActions ? <th scope="col">الإجراءات</th> : null}
               </tr>
             </thead>
 
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td className="table__status" colSpan={visibleColumns.length + 1}>
+                  <td className="table__status" colSpan={visibleColumns.length + (hasActions ? 1 : 0)}>
                     جارٍ تحميل البيانات...
                   </td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td className="table__status" colSpan={visibleColumns.length + 1}>
+                  <td className="table__status" colSpan={visibleColumns.length + (hasActions ? 1 : 0)}>
                     {emptyMessage}
                   </td>
                 </tr>
@@ -211,40 +213,42 @@ function Table({
                       )
                     })}
 
-                    <td className="table__actions" data-label="الإجراءات">
-                      <div className="table__actions-inner">
-                        <button
-                          aria-label="تعديل"
-                          className="table__action table__action--edit"
-                          onClick={() => onEdit(row)}
-                          title="تعديل"
-                          type="button"
-                        >
-                          <svg
-                            aria-hidden="true"
-                            className="table__icon"
-                            viewBox="0 0 24 24"
+                    {hasActions ? (
+                      <td className="table__actions" data-label="الإجراءات">
+                        <div className="table__actions-inner">
+                          <button
+                            aria-label="تعديل"
+                            className="table__action table__action--edit"
+                            onClick={() => onEdit(row)}
+                            title="تعديل"
+                            type="button"
                           >
-                            <path d="M4 15.5V20h4.5L19 9.5 14.5 5 4 15.5zm17.7-10.3a1 1 0 0 0 0-1.4l-1.5-1.5a1 1 0 0 0-1.4 0l-1.2 1.2 4.5 4.5 1.1-1.1z" />
-                          </svg>
-                        </button>
-                        <button
-                          aria-label="حذف"
-                          className="table__action table__action--delete"
-                          onClick={() => onDelete(row)}
-                          title="حذف"
-                          type="button"
-                        >
-                          <svg
-                            aria-hidden="true"
-                            className="table__icon"
-                            viewBox="0 0 24 24"
+                            <svg
+                              aria-hidden="true"
+                              className="table__icon"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M4 15.5V20h4.5L19 9.5 14.5 5 4 15.5zm17.7-10.3a1 1 0 0 0 0-1.4l-1.5-1.5a1 1 0 0 0-1.4 0l-1.2 1.2 4.5 4.5 1.1-1.1z" />
+                            </svg>
+                          </button>
+                          <button
+                            aria-label="حذف"
+                            className="table__action table__action--delete"
+                            onClick={() => onDelete(row)}
+                            title="حذف"
+                            type="button"
                           >
-                            <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 7h2v8h-2v-8zm4 0h2v8h-2v-8zM7 10h2v8H7v-8zm1 11h8a2 2 0 0 0 2-2V8H6v11a2 2 0 0 0 2 2z" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
+                            <svg
+                              aria-hidden="true"
+                              className="table__icon"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 7h2v8h-2v-8zm4 0h2v8h-2v-8zM7 10h2v8H7v-8zm1 11h8a2 2 0 0 0 2-2V8H6v11a2 2 0 0 0 2 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    ) : null}
                   </tr>
                 ))
               )}
@@ -300,28 +304,30 @@ function Table({
                         </div>
                       ))}
 
-                      <div className="table-mobile__actions">
-                        <button
-                          className="table__action table__action--edit"
-                          onClick={() => onEdit(row)}
-                          title="تعديل"
-                          type="button"
-                        >
-                          <svg aria-hidden="true" className="table__icon" viewBox="0 0 24 24">
-                            <path d="M4 15.5V20h4.5L19 9.5 14.5 5 4 15.5zm17.7-10.3a1 1 0 0 0 0-1.4l-1.5-1.5a1 1 0 0 0-1.4 0l-1.2 1.2 4.5 4.5 1.1-1.1z" />
-                          </svg>
-                        </button>
-                        <button
-                          className="table__action table__action--delete"
-                          onClick={() => onDelete(row)}
-                          title="حذف"
-                          type="button"
-                        >
-                          <svg aria-hidden="true" className="table__icon" viewBox="0 0 24 24">
-                            <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 7h2v8h-2v-8zm4 0h2v8h-2v-8zM7 10h2v8H7v-8zm1 11h8a2 2 0 0 0 2-2V8H6v11a2 2 0 0 0 2 2z" />
-                          </svg>
-                        </button>
-                      </div>
+                      {hasActions ? (
+                        <div className="table-mobile__actions">
+                          <button
+                            className="table__action table__action--edit"
+                            onClick={() => onEdit(row)}
+                            title="تعديل"
+                            type="button"
+                          >
+                            <svg aria-hidden="true" className="table__icon" viewBox="0 0 24 24">
+                              <path d="M4 15.5V20h4.5L19 9.5 14.5 5 4 15.5zm17.7-10.3a1 1 0 0 0 0-1.4l-1.5-1.5a1 1 0 0 0-1.4 0l-1.2 1.2 4.5 4.5 1.1-1.1z" />
+                            </svg>
+                          </button>
+                          <button
+                            className="table__action table__action--delete"
+                            onClick={() => onDelete(row)}
+                            title="حذف"
+                            type="button"
+                          >
+                            <svg aria-hidden="true" className="table__icon" viewBox="0 0 24 24">
+                              <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 7h2v8h-2v-8zm4 0h2v8h-2v-8zM7 10h2v8H7v-8zm1 11h8a2 2 0 0 0 2-2V8H6v11a2 2 0 0 0 2 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </article>

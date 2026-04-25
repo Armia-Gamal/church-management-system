@@ -243,6 +243,34 @@
   color: var(--text-muted);
 }
 
+.table__note-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  max-width: 360px;
+}
+
+.table__note-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.table__note-toggle {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--primary-strong);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.table__note-toggle:hover {
+  text-decoration: underline;
+}
+
 .table__pagination {
   display: flex;
   align-items: center;

@@ -17,13 +17,37 @@ const normalizeFieldValue = (field, value) => {
   return normalizedValue
 }
 
+const isImageFileValue = (value) => {
+  if (value instanceof File) {
+    return value.type.startsWith('image/')
+  }
+
+  if (typeof value !== 'string' || !value) {
+    return false
+  }
+
+  return /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(value) || value.startsWith('data:image/')
+}
+
+const isPdfFileValue = (value) => {
+  if (value instanceof File) {
+    return value.type === 'application/pdf'
+  }
+
+  if (typeof value !== 'string' || !value) {
+    return false
+  }
+
+  return /\.pdf(\?.*)?$/i.test(value) || value.startsWith('data:application/pdf')
+}
+
 const getFileStatusText = (value) => {
   if (value instanceof File) {
     return `تم اختيار الملف: ${value.name}`
   }
 
   if (typeof value === 'string' && value) {
-    return 'توجد صورة مرفوعة حاليًا'
+    return 'يوجد ملف مرفوع حاليًا'
   }
 
   return 'لم يتم اختيار ملف'
@@ -110,7 +134,7 @@ function Form({
                     ) : field.type === 'file' ? (
                       <>
                         <input
-                          accept={field.accept || 'image/*'}
+                          accept={field.accept || 'image/*,application/pdf,.pdf'}
                           name={field.name}
                           onChange={onChange}
                           required={field.required}
@@ -122,9 +146,20 @@ function Form({
                         </p>
 
                         {typeof fieldValue === 'string' && fieldValue ? (
-                          <div className="record-form__image-preview">
-                            <img alt={field.label} src={fieldValue} />
-                          </div>
+                          isImageFileValue(fieldValue) ? (
+                            <div className="record-form__image-preview">
+                              <img alt={field.label} src={fieldValue} />
+                            </div>
+                          ) : isPdfFileValue(fieldValue) ? (
+                            <a
+                              className="record-form__file-link"
+                              href={fieldValue}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              عرض ملف PDF المرفوع
+                            </a>
+                          ) : null
                         ) : null}
                       </>
                     ) : (

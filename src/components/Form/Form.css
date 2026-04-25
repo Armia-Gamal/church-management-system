@@ -180,6 +180,17 @@
   background: rgba(35, 111, 128, 0.06);
 }
 
+.record-form__file-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(35, 111, 128, 0.1);
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
 .record-form__image-preview {
   width: 120px;
   height: 120px;
