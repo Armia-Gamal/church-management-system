@@ -64,16 +64,16 @@ function Dashboard() {
       link: '/leaders',
     },
     {
-      title: 'الأعضاء',
-      count: stats.members,
-      description: 'بيانات الأعضاء والمراحل والعناوين والهواتف والصور.',
-      link: '/members',
-    },
-    {
       title: 'القادة البنات',
       count: stats.rovers,
       description: 'إدارة ملفات القادة البنات بنفس حقول القادة بالكامل.',
       link: '/rovers',
+    },
+    {
+      title: 'الأعضاء',
+      count: stats.members,
+      description: 'بيانات الأعضاء والمراحل والعناوين والهواتف والصور.',
+      link: '/members',
     },
   ]
 

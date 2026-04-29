@@ -4,6 +4,8 @@ import Table from '../../components/Table/Table'
 import Form from '../../components/Form/Form'
 import getFirebaseErrorMessage from '../../firebase/errorMessages'
 import leaderService from '../../services/leaderService'
+import { validateDobMatchesEgyptianNationalId } from '../../utils/egyptianNationalId'
+import { generateParticipantCode } from '../../utils/participantCode'
 import './Leaders.css'
 
 const formatNumber = (value) => new Intl.NumberFormat('ar-EG').format(value)
@@ -126,6 +128,7 @@ const columns = [
     render: (leader) => formatDateTime(leader.timestamp),
   },
   { key: 'fullName', label: 'الاسم رباعي' },
+  { key: 'participantCode', label: 'الكود' },
   { key: 'birthDate', label: 'تاريخ الميلاد' },
   { key: 'address', label: 'العنوان' },
   { key: 'nationalId', label: 'الرقم القومي' },
@@ -237,6 +240,7 @@ const formFields = [
     name: 'scoutEntryYear',
     label: 'تاريخ دخول الكشافه',
     type: 'select',
+    required: true,
     options: scoutYearOptions,
     fullWidth: true,
     group: 'بيانات إضافية',
@@ -332,7 +336,7 @@ function Leaders() {
 
   const filteredLeaders = leaders.filter((leader) => {
     const target =
-      `${leader.fullName || ''} ${leader.phone || ''} ${leader.nationalId || ''}`.toLowerCase()
+      `${leader.fullName || ''} ${leader.participantCode || ''} ${leader.phone || ''} ${leader.nationalId || ''}`.toLowerCase()
     const matchesSearch = target.includes(searchTerm.trim().toLowerCase())
     const matchesStatus =
       selectedStatuses.length === 0 || selectedStatuses.includes(normalizeStatusValue(leader.status))
@@ -457,6 +461,7 @@ function Leaders() {
       servantsChurch: normalizeTextValue(formValues.servantsChurch),
       scoutEntryYear: normalizeTextValue(formValues.scoutEntryYear),
       note: normalizeTextValue(formValues.note),
+      participantCode: '',
       images: {
         profile: normalizeImageValue(formValues.images.profile),
         idFront: normalizeImageValue(formValues.images.idFront),
@@ -469,9 +474,40 @@ function Leaders() {
       return
     }
 
-    if (!payload.fullName || !payload.phone || !payload.nationalId || !payload.service2026) {
-      setError('الاسم رباعي ورقم الهاتف والرقم القومي والخدمة حقول مطلوبة.')
+    if (!payload.fullName || !payload.phone || !payload.nationalId || !payload.service2026 || !payload.scoutEntryYear) {
+      setError('الاسم رباعي ورقم الهاتف والرقم القومي والخدمة وسنة تاريخ الالتحاق حقول مطلوبة.')
       return
+    }
+
+    const existingParticipantCode = normalizeTextValue(selectedLeader?.participantCode)
+
+    if (existingParticipantCode) {
+      payload.participantCode = existingParticipantCode
+    } else {
+      const codeResult = generateParticipantCode({
+        nationalId: payload.nationalId,
+        scoutEntryYear: payload.scoutEntryYear,
+        stage: 'متقدم',
+      })
+
+      if (!codeResult.isValid) {
+        setError('تعذر تكوين الكود تلقائيًا. تأكد من الرقم القومي وسنة الالتحاق.')
+        return
+      }
+
+      payload.participantCode = codeResult.code
+    }
+
+    if (payload.birthDate && payload.nationalId) {
+      const dobValidation = validateDobMatchesEgyptianNationalId({
+        dob: payload.birthDate,
+        nationalId: payload.nationalId,
+      })
+
+      if (!dobValidation.isMatch) {
+        setError('❌ الرقم القومي غير صحيح أو لا يطابق تاريخ الميلاد')
+        return
+      }
     }
 
     setIsSaving(true)

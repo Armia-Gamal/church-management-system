@@ -23,7 +23,13 @@ service cloud.firestore {
 
     match /members/{documentId} {
       allow read: if isAdmin() || hasAssignedMemberStage(resource.data.stage);
-      allow write: if isAdmin();
+      allow create: if isAdmin() || hasAssignedMemberStage(request.resource.data.stage);
+      allow update: if isAdmin()
+        || (
+          hasAssignedMemberStage(resource.data.stage)
+          && hasAssignedMemberStage(request.resource.data.stage)
+        );
+      allow delete: if isAdmin();
     }
 
     match /rovers/{documentId} {

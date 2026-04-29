@@ -4,6 +4,8 @@ import Table from '../../components/Table/Table'
 import Form from '../../components/Form/Form'
 import getFirebaseErrorMessage from '../../firebase/errorMessages'
 import memberService from '../../services/memberService'
+import { validateDobMatchesEgyptianNationalId } from '../../utils/egyptianNationalId'
+import { generateParticipantCode } from '../../utils/participantCode'
 import './Members.css'
 
 const formatNumber = (value) => new Intl.NumberFormat('ar-EG').format(value)
@@ -127,6 +129,7 @@ const columns = [
   },
   { key: 'stage', label: 'المرحلة' },
   { key: 'fullName', label: 'الاسم رباعي' },
+  { key: 'participantCode', label: 'الكود' },
   { key: 'birthDate', label: 'تاريخ الميلاد' },
   { key: 'nationalId', label: 'الرقم القومي' },
   { key: 'phone', label: 'رقم الهاتف' },
@@ -164,9 +167,9 @@ const columns = [
   },
 ]
 
-const createEmptyForm = () => ({
+const createEmptyForm = (stage = '') => ({
   status: 'نشط',
-  stage: '',
+  stage,
   fullName: '',
   birthDate: '',
   nationalId: '',
@@ -213,6 +216,7 @@ const formFields = [
     name: 'scoutEntryYear',
     label: 'تاريخ دخول الكشافه',
     type: 'select',
+    required: true,
     options: scoutYearOptions,
     fullWidth: true,
     group: 'بيانات إضافية',
@@ -249,8 +253,19 @@ function Members({ accessProfile }) {
   const [isSaving, setIsSaving] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedMember, setSelectedMember] = useState(null)
-  const [formValues, setFormValues] = useState(createEmptyForm())
+  const [formValues, setFormValues] = useState(createEmptyForm(sharedMemberStage))
   const [error, setError] = useState('')
+
+  const resolvedFormFields = isSharedStageUser
+    ? formFields.map((field) =>
+        field.name === 'stage'
+          ? {
+              ...field,
+              options: sharedMemberStage ? [sharedMemberStage] : [],
+            }
+          : field,
+      )
+    : formFields
 
   const loadMembers = async () => {
     setIsLoading(true)
@@ -310,6 +325,10 @@ function Members({ accessProfile }) {
     }
 
     setSelectedStages(sharedMemberStage ? [sharedMemberStage] : [])
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      stage: sharedMemberStage,
+    }))
   }, [isSharedStageUser, sharedMemberStage])
 
   useEffect(() => {
@@ -328,7 +347,7 @@ function Members({ accessProfile }) {
 
   const filteredMembers = members.filter((member) => {
     const target =
-      `${member.fullName || ''} ${member.phone || ''} ${member.nationalId || ''}`.toLowerCase()
+      `${member.fullName || ''} ${member.participantCode || ''} ${member.phone || ''} ${member.nationalId || ''}`.toLowerCase()
 
     const matchesSearch = target.includes(searchTerm.trim().toLowerCase())
     const matchesStage = isSharedStageUser
@@ -391,7 +410,7 @@ function Members({ accessProfile }) {
 
   const handleAddClick = () => {
     setSelectedMember(null)
-    setFormValues(createEmptyForm())
+    setFormValues(createEmptyForm(isSharedStageUser ? sharedMemberStage : ''))
     setError('')
     setIsFormOpen(true)
   }
@@ -452,7 +471,7 @@ function Members({ accessProfile }) {
   const handleCloseForm = () => {
     setIsFormOpen(false)
     setSelectedMember(null)
-    setFormValues(createEmptyForm())
+    setFormValues(createEmptyForm(isSharedStageUser ? sharedMemberStage : ''))
   }
 
   const handleSubmit = async (event) => {
@@ -460,7 +479,9 @@ function Members({ accessProfile }) {
 
     const payload = {
       status: normalizeStatusValue(formValues.status),
-      stage: normalizeTextValue(formValues.stage),
+      stage: isSharedStageUser
+        ? sharedMemberStage
+        : normalizeTextValue(formValues.stage),
       fullName: normalizeTextValue(formValues.fullName),
       birthDate: formValues.birthDate,
       nationalId: normalizeTextValue(formValues.nationalId),
@@ -469,15 +490,47 @@ function Members({ accessProfile }) {
       address: normalizeTextValue(formValues.address),
       scoutEntryYear: normalizeTextValue(formValues.scoutEntryYear),
       note: normalizeTextValue(formValues.note),
+      participantCode: '',
       images: {
         profile: normalizeImageValue(formValues.images.profile),
         document: normalizeImageValue(formValues.images.document),
       },
     }
 
-    if (!payload.stage || !payload.fullName || !payload.phone || !payload.nationalId) {
-      setError('المرحلة والاسم رباعي ورقم الهاتف والرقم القومي حقول مطلوبة.')
+    if (!payload.stage || !payload.fullName || !payload.phone || !payload.nationalId || !payload.scoutEntryYear) {
+      setError('المرحلة والاسم رباعي ورقم الهاتف والرقم القومي وسنة تاريخ الالتحاق حقول مطلوبة.')
       return
+    }
+
+    const existingParticipantCode = normalizeTextValue(selectedMember?.participantCode)
+
+    if (existingParticipantCode) {
+      payload.participantCode = existingParticipantCode
+    } else {
+      const codeResult = generateParticipantCode({
+        nationalId: payload.nationalId,
+        scoutEntryYear: payload.scoutEntryYear,
+        stage: payload.stage,
+      })
+
+      if (!codeResult.isValid) {
+        setError('تعذر تكوين الكود تلقائيًا. تأكد من الرقم القومي وسنة الالتحاق والمرحلة.')
+        return
+      }
+
+      payload.participantCode = codeResult.code
+    }
+
+    if (payload.birthDate && payload.nationalId) {
+      const dobValidation = validateDobMatchesEgyptianNationalId({
+        dob: payload.birthDate,
+        nationalId: payload.nationalId,
+      })
+
+      if (!dobValidation.isMatch) {
+        setError('❌ الرقم القومي غير صحيح أو لا يطابق تاريخ الميلاد')
+        return
+      }
     }
 
     setIsSaving(true)
@@ -522,8 +575,8 @@ function Members({ accessProfile }) {
       </div>
 
       <SearchBar
-        buttonLabel={isSharedStageUser ? '' : 'إضافة عضو'}
-        onAdd={isSharedStageUser ? undefined : handleAddClick}
+        buttonLabel="إضافة عضو"
+        onAdd={handleAddClick}
         onChange={setSearchTerm}
         placeholder="ابحث بالاسم أو رقم الهاتف أو الرقم القومي"
         value={searchTerm}
@@ -649,19 +702,17 @@ function Members({ accessProfile }) {
         onEdit={handleEdit}
       />
 
-      {!isSharedStageUser ? (
-        <Form
-          errorMessage={error}
-          fields={formFields}
-          isOpen={isFormOpen}
-          isSubmitting={isSaving}
-          onChange={handleChange}
-          onClose={handleCloseForm}
-          onSubmit={handleSubmit}
-          title={selectedMember ? 'تعديل بيانات عضو' : 'إضافة عضو'}
-          values={formValues}
-        />
-      ) : null}
+      <Form
+        errorMessage={error}
+        fields={resolvedFormFields}
+        isOpen={isFormOpen}
+        isSubmitting={isSaving}
+        onChange={handleChange}
+        onClose={handleCloseForm}
+        onSubmit={handleSubmit}
+        title={selectedMember ? 'تعديل بيانات عضو' : 'إضافة عضو'}
+        values={formValues}
+      />
     </section>
   )
 }
